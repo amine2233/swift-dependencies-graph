@@ -10,6 +10,7 @@ let package = Package(
     ],
     products: [
         .executable(name: "dgraph", targets: ["DependenciesGraph"]),
+        .library(name: "DependenciesGraphCore", targets: ["DependenciesGraphCore"])
     ],
     dependencies: [
         // Dependencies declare other packages that this package depends on.
