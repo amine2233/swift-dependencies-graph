@@ -19,10 +19,6 @@ public enum MermaidCreator {
             .appending("```")
             .joined(separator: "\n")
     }
-    
-    public static func makeDefaultDumpPackage() -> any DumpPackage {
-        DumpPackageDefault()
-    }
 
     private static func stripTransitiveDependencies(
         _ modules: [Module]

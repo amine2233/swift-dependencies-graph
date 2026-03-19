@@ -1,5 +1,9 @@
 import DependenciesGraphCore
 
+enum DumpPackageMockError: Error {
+    case missingReturnValue
+}
+
 final class DumpPackageMock: DumpPackage {
     
    // MARK: - dumpPackage
@@ -11,7 +15,7 @@ final class DumpPackageMock: DumpPackage {
     }
     var dumpPackagePackageRootDirectoryPathReceivedPackageRootDirectoryPath: String?
     var dumpPackagePackageRootDirectoryPathReceivedInvocations: [String?] = []
-    var dumpPackagePackageRootDirectoryPathReturnValue: String!
+    var dumpPackagePackageRootDirectoryPathReturnValue: String?
     var dumpPackagePackageRootDirectoryPathClosure: ((String?) throws -> String)?
 
     func dumpPackage(packageRootDirectoryPath: String?) throws -> String {
@@ -21,6 +25,13 @@ final class DumpPackageMock: DumpPackage {
         dumpPackagePackageRootDirectoryPathCallsCount += 1
         dumpPackagePackageRootDirectoryPathReceivedPackageRootDirectoryPath = packageRootDirectoryPath
         dumpPackagePackageRootDirectoryPathReceivedInvocations.append(packageRootDirectoryPath)
-        return try dumpPackagePackageRootDirectoryPathClosure.map({ try $0(packageRootDirectoryPath) }) ?? dumpPackagePackageRootDirectoryPathReturnValue
+
+        if let closure = dumpPackagePackageRootDirectoryPathClosure {
+            return try closure(packageRootDirectoryPath)
+        }
+        if let returnValue = dumpPackagePackageRootDirectoryPathReturnValue {
+            return returnValue
+        }
+        throw DumpPackageMockError.missingReturnValue
     }
 }

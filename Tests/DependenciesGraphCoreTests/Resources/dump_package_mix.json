@@ -32,11 +32,6 @@
     }
   ],
   "name" : "redux-kit",
-  "packageKind" : {
-    "root" : [
-      "/Users/amine/Developer/personal/gitlab/intech-consulting-app/swift-packages/redux-kit"
-    ]
-  },
   "pkgConfig" : null,
   "platforms" : [
     {
@@ -44,7 +39,7 @@
 
       ],
       "platformName" : "macos",
-      "version" : "15.0"
+      "version" : "14.0"
     },
     {
       "options" : [
@@ -121,7 +116,7 @@
     {
       "dependencies" : [
         {
-          "target" : [
+          "byName" : [
             "ReduxKit",
             null
           ]
@@ -195,7 +190,7 @@
     {
       "dependencies" : [
         {
-          "target" : [
+          "byName" : [
             "ReduxKitExtensions",
             null
           ]

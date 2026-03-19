@@ -6,8 +6,12 @@ public protocol DumpPackage {
     ) throws -> String
 }
 
-struct DumpPackageDefault: DumpPackage {
-    func dumpPackage(
+extension DumpPackage where Self == DumpPackageDefault {
+    public static var `default`: any DumpPackage { DumpPackageDefault() }
+}
+
+public struct DumpPackageDefault: DumpPackage {
+    public func dumpPackage(
         packageRootDirectoryPath: String? = nil
     ) throws -> String {
         try Command.run(
@@ -21,12 +25,12 @@ struct DumpPackageDefault: DumpPackage {
 public struct DependenciesReader {
     private let packageRootDirectoryPath: String
     private let decoder: JSONDecoder
-    private let dumpPackage: DumpPackage
+    private let dumpPackage: any DumpPackage
 
     public init(
         packageRootDirectoryPath: String,
         decoder: JSONDecoder = .init(),
-        dumpPackage: DumpPackage = MermaidCreator.makeDefaultDumpPackage()
+        dumpPackage: any DumpPackage = .default
     ) {
         self.packageRootDirectoryPath = packageRootDirectoryPath
         self.decoder = decoder
@@ -54,6 +58,31 @@ package struct DumpPackageResponse: Decodable {
         struct Dependency: Decodable {
             let target: [String?]?
             let product: [String?]?
+            let byName: [String?]?
+
+            private enum CodingKeys: String, CodingKey {
+                case target
+                case product
+                case byName
+            }
+
+            init(target: [String?]?, product: [String?]?, byName: [String?]? = nil) {
+                // Normalize so that `target` and `byName` always reflect the same underlying value.
+                let effectiveByName = byName ?? target
+                self.byName = effectiveByName
+                self.target = effectiveByName
+                self.product = product
+            }
+
+            init(from decoder: Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                let decodedTarget = try container.decodeIfPresent([String?].self, forKey: .target)
+                let decodedByName = try container.decodeIfPresent([String?].self, forKey: .byName)
+                let effectiveByName = decodedByName ?? decodedTarget
+                self.byName = effectiveByName
+                self.target = effectiveByName
+                self.product = try container.decodeIfPresent([String?].self, forKey: .product)
+            }
         }
     }
 }
@@ -61,10 +90,10 @@ package struct DumpPackageResponse: Decodable {
 extension DumpPackageResponse {
     func toModule(isIncludeProduct: Bool) -> [Module] {
         targets.map { target in
-            let byNameDependencies = target.dependencies.compactMap { $0.target?.compactMap(\.self).first }
-            let productDependencies = target.dependencies.compactMap { $0.product?.compactMap(\.self).first }
+            let byNameDependencies = target.dependencies.compactMap { $0.byName?.compactMap(\.self).first }.sorted()
+            let productDependencies = target.dependencies.compactMap { $0.product?.compactMap(\.self).first }.sorted()
             let dependencies = isIncludeProduct ? byNameDependencies + productDependencies : byNameDependencies
             return Module(name: target.name, dependencies: dependencies)
-        }
+        }.sorted { $0.name < $1.name }
     }
 }

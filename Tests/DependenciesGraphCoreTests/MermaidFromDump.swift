@@ -3,53 +3,65 @@ import Testing
 import Foundation
 
 struct MermaidFromDumpTests {
-    
-    @Test func createMermaid() throws {
-        let dump = try Bundle.module.data(forResource: "dump_package", withExtension: "json")
-        let dumpPackage = DumpPackageMock()
-        dumpPackage.dumpPackagePackageRootDirectoryPathReturnValue = String(data: dump, encoding: .utf8)
-        
-        let sut = DependenciesReader(
-            packageRootDirectoryPath: "",
-            decoder: JSONDecoder(),
-            dumpPackage: dumpPackage
-        )
-        let modules = try sut.readDependencies(isIncludeProduct: false)
-        let result = MermaidCreator.create(from: modules, stripTransitive: false)
-        let expected = """
-        ```mermaid
-        graph TD;
-            ReduxKitUI-->ReduxKit;
-            ReduxKitExtensions-->ReduxKit;
-            ExampleApp-->ReduxKit;
-        ```
-        """
-
-        #expect(result == expected)
+    enum MermaidFromDumpTestsError: Error {
+        case invalidUTF8Dump
     }
     
-    @Test func createMermaidWithIncludedProduct() throws {
-        let dump = try Bundle.module.data(forResource: "dump_package", withExtension: "json")
+    struct TestCase {
+        let isIncludeProduct: Bool
+        let expected: String
+        
+        static let withoutProducts = TestCase(
+            isIncludeProduct: false,
+            expected: """
+                ```mermaid
+                graph TD;
+                    ExampleApp-->ReduxKit;
+                    ReduxKitExtensions-->ReduxKit;
+                    ReduxKitExtensionsTests-->ReduxKitExtensions;
+                    ReduxKitTests-->ReduxKit;
+                    ReduxKitUI-->ReduxKit;
+                ```
+                """
+        )
+        
+        static let withProducts = TestCase(
+            isIncludeProduct: true,
+            expected: """
+                ```mermaid
+                graph TD;
+                    ExampleApp-->ReduxKit;
+                    ReduxKitExtensions-->ReduxKit;
+                    ReduxKitExtensions-->Collections;
+                    ReduxKitExtensionsTests-->ReduxKitExtensions;
+                    ReduxKitTests-->ReduxKit;
+                    ReduxKitUI-->ReduxKit;
+                ```
+                """
+        )
+    }
+        
+    static let resources = ["dump_package", "dump_package_by_name", "dump_package_mix"]
+    static let testCases = [TestCase.withProducts, .withoutProducts]
+    
+    @Test(arguments: resources, testCases)
+    func createMermaid(resource: String, testCase: TestCase) throws {
+        let dump = try Bundle.module.data(forResource: resource, withExtension: "json")
+        guard let dumpString = String(data: dump, encoding: .utf8) else {
+            Issue.record("Invalid UTF8 dump")
+            throw MermaidFromDumpTestsError.invalidUTF8Dump
+        }
         let dumpPackage = DumpPackageMock()
-        dumpPackage.dumpPackagePackageRootDirectoryPathReturnValue = String(data: dump, encoding: .utf8)
+        dumpPackage.dumpPackagePackageRootDirectoryPathReturnValue = dumpString
         
         let sut = DependenciesReader(
             packageRootDirectoryPath: "",
             decoder: JSONDecoder(),
             dumpPackage: dumpPackage
         )
-        let modules = try sut.readDependencies(isIncludeProduct: true)
-        let result = MermaidCreator.create(from: modules, stripTransitive: true)
-        let expected = """
-        ```mermaid
-        graph TD;
-            ReduxKitUI-->ReduxKit;
-            ReduxKitExtensions-->Collections;
-            ReduxKitExtensions-->ReduxKit;
-            ExampleApp-->ReduxKit;
-        ```
-        """
-
-        #expect(result == expected)
+        let modules = try sut.readDependencies(isIncludeProduct: testCase.isIncludeProduct)
+        let result = MermaidCreator.create(from: modules, stripTransitive: false)
+        
+        #expect(result == testCase.expected)
     }
 }

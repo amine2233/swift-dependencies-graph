@@ -32,7 +32,9 @@ let package = Package(
             name: "DependenciesGraphCoreTests",
             dependencies: ["DependenciesGraphCore"],
             resources: [
-                .copy("Resources/dump_package.json")
+                .copy("Resources/dump_package.json"),
+                .copy("Resources/dump_package_by_name.json"),
+                .copy("Resources/dump_package_mix.json")
             ]
         ),
     ]
