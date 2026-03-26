@@ -51,8 +51,7 @@ struct MermaidFromDumpTests {
             Issue.record("Invalid UTF8 dump")
             throw MermaidFromDumpTestsError.invalidUTF8Dump
         }
-        let dumpPackage = DumpPackageMock()
-        dumpPackage.dumpPackagePackageRootDirectoryPathReturnValue = dumpString
+        let dumpPackage = DumpPackageMock(dumpPackageReturnValue: dumpString)
         
         let sut = DependenciesReader(
             packageRootDirectoryPath: "",

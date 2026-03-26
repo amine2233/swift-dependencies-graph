@@ -1,6 +1,6 @@
 import Foundation
 
-public protocol DumpPackage {
+public protocol DumpPackage: Sendable {
     func dumpPackage(
         packageRootDirectoryPath: String?
     ) throws -> String
@@ -48,7 +48,7 @@ public struct DependenciesReader {
     }
 }
 
-package struct DumpPackageResponse: Decodable {
+struct DumpPackageResponse: Decodable {
     let targets: [Target]
 
     struct Target: Decodable {
